@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Dashboard — Miss Bald Beauty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#FAF6F1; --plum:#241722; --plum-soft:#3A2536;
+    --burgundy:#7A2E3B; --gold:#C9A369; --line:#E4DAD0; --text-soft:#6E6259;
+    --ok:#3F7A56; --err:#B23A3A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--ivory);color:var(--plum);font-family:'Manrope',sans-serif;}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;}
+  input,textarea,select,button{font-family:'Manrope',sans-serif;font-size:0.95rem;}
+
+  /* LOGIN SCREEN */
+  #login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+  }
+  .login-box{
+    background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:44px;width:380px;
+  }
+  .login-box h1{font-style:italic;font-size:1.7rem;margin-bottom:6px;}
+  .login-box p{color:var(--text-soft);font-size:0.9rem;margin-bottom:28px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:0.82rem;color:var(--text-soft);margin-bottom:6px;}
+  .field input, .field textarea, .field select{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:4px;
+    background:var(--ivory);
+  }
+  .btn{
+    padding:12px 22px;border-radius:4px;font-weight:600;border:1px solid var(--plum);
+    cursor:pointer;transition:all .2s ease;
+  }
+  .btn-dark{background:var(--plum);color:var(--ivory);}
+  .btn-dark:hover{background:var(--burgundy);border-color:var(--burgundy);}
+  .btn-full{width:100%;}
+  .msg{font-size:0.85rem;margin-top:12px;}
+  .msg.err{color:var(--err);}
+  .msg.ok{color:var(--ok);}
+  .switch-link{text-align:center;margin-top:16px;font-size:0.85rem;color:var(--text-soft);}
+  .switch-link a{color:var(--burgundy);font-weight:600;cursor:pointer;}
+
+  /* DASHBOARD */
+  #dashboard{display:none;}
+  header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:20px 6%;border-bottom:1px solid var(--line);background:#fff;
+  }
+  .logo{font-family:'Fraunces',serif;font-style:italic;font-size:1.4rem;}
+  .logout{font-size:0.85rem;color:var(--text-soft);cursor:pointer;}
+  main{padding:40px 6%;max-width:1000px;margin:0 auto;}
+  .tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-bottom:32px;}
+  .tab{padding-bottom:14px;color:var(--text-soft);cursor:pointer;font-size:0.95rem;}
+  .tab.active{color:var(--plum);font-weight:700;border-bottom:2px solid var(--burgundy);}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:28px;margin-bottom:20px;}
+  .card h3{font-size:1.1rem;margin-bottom:18px;}
+
+  .tier-row{display:grid;grid-template-columns:1fr 1fr 100px;gap:10px;margin-bottom:10px;}
+  .tier-row input{padding:9px 11px;border:1px solid var(--line);border-radius:4px;}
+  .add-tier{font-size:0.85rem;color:var(--burgundy);cursor:pointer;margin-top:6px;display:inline-block;}
+
+  .upload-drop{
+    border:2px dashed var(--line);border-radius:6px;padding:36px;text-align:center;
+    color:var(--text-soft);cursor:pointer;margin-bottom:16px;
+  }
+  .upload-drop.has-file{border-color:var(--gold);color:var(--plum);}
+
+  .video-list-item{
+    display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);
+  }
+  .video-list-item .thumb{width:70px;height:90px;background:linear-gradient(160deg,#e9dfd4,#d8c8b6);border-radius:4px;flex-shrink:0;}
+  .video-list-item .info{flex:1;}
+  .video-list-item h4{font-size:0.95rem;font-weight:600;}
+  .video-list-item p{font-size:0.82rem;color:var(--text-soft);margin-top:2px;}
+  .status-pill{font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:600;}
+  .status-pending{background:#FBF0DB;color:#9B6B15;}
+  .status-approved{background:#E2F0E7;color:var(--ok);}
+  .status-rejected{background:#F6E2E2;color:var(--err);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN / SIGNUP -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Creator Login</h1>
+    <p id="auth-subtitle">Apne account mein login karein.</p>
+
+    <div id="signup-name-field" class="field" style="display:none;">
+      <label>Naam</label>
+      <input type="text" id="signup-name">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="auth-email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password">
+    </div>
+    <button class="btn btn-dark btn-full" id="auth-submit-btn" onclick="login()">Login Karein</button>
+    <div class="msg" id="auth-msg"></div>
+    <div class="switch-link">
+      <span id="switch-text">Account nahi hai?</span> <a onclick="toggleAuthMode()" id="switch-action">Sign up karein</a>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header>
+    <div class="logo">Miss Bald Beauty — Creator</div>
+    <div class="logout" onclick="logout()">Logout</div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-tab="profile" onclick="switchTab('profile')">Profile</div>
+      <div class="tab" data-tab="upload" onclick="switchTab('upload')">Upload</div>
+      <div class="tab" data-tab="videos" onclick="switchTab('videos')">Mere Videos</div>
+    </div>
+
+    <!-- PROFILE PANEL -->
+    <div class="panel active" id="panel-profile">
+      <div class="card" id="become-creator-card">
+        <h3>Creator Profile Banayein</h3>
+        <div class="field"><label>Display Name</label><input type="text" id="c-displayName" placeholder="e.g. Priya M."></div>
+        <div class="field"><label>Handle (unique, sirf lowercase letters/numbers)</label><input type="text" id="c-handle" placeholder="e.g. priya.beauty"></div>
+        <div class="field"><label>Bio</label><textarea id="c-bio" rows="3" placeholder="Apne baare mein likhein..."></textarea></div>
+
+        <h3 style="margin-top:24px;">Subscription Tiers</h3>
+        <div id="tier-rows">
+          <div class="tier-row"><input placeholder="Tier naam (e.g. Basic)" class="tier-name"><input placeholder="Price ₹/month" type="number" class="tier-price"><input placeholder="—" class="tier-desc" style="display:none;"></div>
+        </div>
+        <span class="add-tier" onclick="addTierRow()">+ Aur tier jodein</span>
+
+        <button class="btn btn-dark" style="margin-top:22px;" onclick="saveProfile()">Profile Save Karein</button>
+        <div class="msg" id="profile-msg"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD PANEL -->
+    <div class="panel" id="panel-upload">
+      <div class="card">
+        <h3>Naya Video Upload Karein</h3>
+        <div class="field"><label>Title</label><input type="text" id="v-title"></div>
+        <div class="field"><label>Description</label><textarea id="v-desc" rows="2"></textarea></div>
+        <div class="field">
+          <label>Access Type</label>
+          <select id="v-access" onchange="toggleVAccessFields()">
+            <option value="subscription_only">Subscribers Only</option>
+            <option value="pay_per_view">Pay Per View</option>
+            <option value="free">Free</option>
+          </select>
+        </div>
+        <div class="field" id="v-price-field" style="display:none;">
+          <label>Price (₹)</label><input type="number" id="v-price">
+        </div>
+
+        <div class="upload-drop" id="video-drop" onclick="document.getElementById('video-file').click()">
+          <span id="video-drop-label">📹 Video file yaha click karke chunein (mp4/mov/webm)</span>
+        </div>
+        <input type="file" id="video-file" accept="video/*" style="display:none;" onchange="fileSelected('video')">
+
+        <div class="upload-drop" id="thumb-drop" onclick="document.getElementById('thumb-file').click()">
+          <span id="thumb-drop-label">🖼️ Thumbnail photo chunein (jpg/png)</span>
+        </div>
+        <input type="file" id="thumb-file" accept="image/*" style="display:none;" onchange="fileSelected('thumb')">
+
+        <button class="btn btn-dark" style="margin-top:10px;" onclick="uploadVideo()">Upload Karein</button>
+        <div class="msg" id="upload-msg"></div>
+      </div>
+    </div>
+
+    <!-- VIDEOS LIST PANEL -->
+    <div class="panel" id="panel-videos">
+      <div class="card">
+        <h3>Mere Uploads</h3>
+        <div id="video-list"><p style="color:var(--text-soft);font-size:0.9rem;">Loading...</p></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // ---- CONFIG ----
+  const API_BASE = 'http://localhost:5000/api'; // change to your deployed backend URL
+
+  let authMode = 'login'; // 'login' or 'signup'
+  let token = localStorage.getItem('mbb_token') || null;
+  let myHandle = localStorage.getItem('mbb_handle') || null;
+
+  // ---- AUTH ----
+  function toggleAuthMode(){
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    document.getElementById('signup-name-field').style.display = authMode === 'signup' ? 'block' : 'none';
+    document.getElementById('auth-subtitle').textContent = authMode === 'signup' ? 'Naya creator account banayein.' : 'Apne account mein login karein.';
+    document.getElementById('auth-submit-btn').textContent = authMode === 'signup' ? 'Sign Up Karein' : 'Login Karein';
+    document.getElementById('auth-submit-btn').setAttribute('onclick', authMode === 'signup' ? 'signup()' : 'login()');
+    document.getElementById('switch-text').textContent = authMode === 'signup' ? 'Already account hai?' : 'Account nahi hai?';
+    document.getElementById('switch-action').textContent = authMode === 'signup' ? 'Login karein' : 'Sign up karein';
+    document.getElementById('auth-msg').textContent = '';
+  }
+
+  async function signup(){
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    try{
+      const res = await fetch(`${API_BASE}/auth/signup`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({name, email, password})
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Signup failed');
+      onAuthSuccess(data.token);
+    }catch(e){ showMsg('auth-msg', e.message, 'err'); }
+  }
+
+  async function login(){
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    try{
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({email, password})
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Login failed');
+      onAuthSuccess(data.token);
+    }catch(e){ showMsg('auth-msg', e.message, 'err'); }
+  }
+
+  function onAuthSuccess(t){
+    token = t;
+    localStorage.setItem('mbb_token', token);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadMyProfile();
+  }
+
+  function logout(){
+    localStorage.removeItem('mbb_token');
+    localStorage.removeItem('mbb_handle');
+    token = null; myHandle = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+  }
+
+  function authHeaders(extra = {}){
+    return { 'Authorization': `Bearer ${token}`, ...extra };
+  }
+
+  // ---- TABS ----
+  function switchTab(name){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${name}`).classList.add('active');
+    if(name === 'videos') loadMyVideos();
+  }
+
+  // ---- PROFILE ----
+  function addTierRow(){
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+    row.innerHTML = `<input placeholder="Tier naam" class="tier-name"><input placeholder="Price ₹/month" type="number" class="tier-price"><input placeholder="—" class="tier-desc" style="display:none;">`;
+    document.getElementById('tier-rows').appendChild(row);
+  }
+
+  async function loadMyProfile(){
+    try{
+      const res = await fetch(`${API_BASE}/creators/me`, { headers: authHeaders() });
+      if(res.status === 404) return; // no profile yet, that's fine
+      const profile = await res.json();
+      if(!res.ok) return;
+
+      document.getElementById('c-displayName').value = profile.displayName || '';
+      document.getElementById('c-handle').value = profile.handle || '';
+      document.getElementById('c-bio').value = profile.bio || '';
+      document.getElementById('c-handle').disabled = true; // handle can't change once set
+
+      myHandle = profile.handle;
+      localStorage.setItem('mbb_handle', myHandle);
+
+      if(profile.subscriptionTiers && profile.subscriptionTiers.length){
+        const container = document.getElementById('tier-rows');
+        container.innerHTML = '';
+        profile.subscriptionTiers.forEach(t => {
+          const row = document.createElement('div');
+          row.className = 'tier-row';
+          row.innerHTML = `<input placeholder="Tier naam" class="tier-name" value="${escapeHtml(t.name)}"><input placeholder="Price ₹/month" type="number" class="tier-price" value="${t.price}"><input placeholder="—" class="tier-desc" style="display:none;">`;
+          container.appendChild(row);
+        });
+      }
+
+      if(!profile.isApproved){
+        showMsg('profile-msg', 'Profile pending hai — admin approval ka intezaar karein.', 'ok');
+      }
+    }catch(e){ /* silent — first-time creators won't have a profile yet */ }
+  }
+
+  async function saveProfile(){
+    const displayName = document.getElementById('c-displayName').value.trim();
+    const handle = document.getElementById('c-handle').value.trim().toLowerCase();
+    const bio = document.getElementById('c-bio').value.trim();
+    const tiers = [...document.querySelectorAll('.tier-row')].map(row => ({
+      name: row.querySelector('.tier-name').value.trim(),
+      price: Number(row.querySelector('.tier-price').value || 0)
+    })).filter(t => t.name && t.price);
+
+    try{
+      let res, data;
+      if(myHandle){
+        res = await fetch(`${API_BASE}/creators/me`, {
+          method:'PATCH',
+          headers: authHeaders({'Content-Type':'application/json'}),
+          body: JSON.stringify({displayName, bio, subscriptionTiers: tiers})
+        });
+        data = await res.json();
+        if(!res.ok) throw new Error(data.message || 'Profile update failed');
+      } else {
+        res = await fetch(`${API_BASE}/creators/become`, {
+          method:'POST',
+          headers: authHeaders({'Content-Type':'application/json'}),
+          body: JSON.stringify({displayName, handle, bio, subscriptionTiers: tiers})
+        });
+        data = await res.json();
+        if(!res.ok) throw new Error(data.message || 'Profile creation failed');
+        myHandle = handle;
+        document.getElementById('c-handle').disabled = true;
+      }
+
+      localStorage.setItem('mbb_handle', myHandle);
+      showMsg('profile-msg', 'Profile saved. Admin approval ke baad public hoga.', 'ok');
+    }catch(e){ showMsg('profile-msg', e.message, 'err'); }
+  }
+
+  // ---- UPLOAD ----
+  let videoFile = null, thumbFile = null;
+
+  function fileSelected(kind){
+    const input = document.getElementById(`${kind}-file`);
+    const file = input.files[0];
+    if(!file) return;
+    if(kind === 'video'){ videoFile = file; document.getElementById('video-drop-label').textContent = `✓ ${file.name}`; document.getElementById('video-drop').classList.add('has-file'); }
+    else { thumbFile = file; document.getElementById('thumb-drop-label').textContent = `✓ ${file.name}`; document.getElementById('thumb-drop').classList.add('has-file'); }
+  }
+
+  function toggleVAccessFields(){
+    document.getElementById('v-price-field').style.display =
+      document.getElementById('v-access').value === 'pay_per_view' ? 'block' : 'none';
+  }
+
+  async function uploadVideo(){
+    if(!videoFile || !thumbFile){ showMsg('upload-msg', 'Video aur thumbnail dono chunein.', 'err'); return; }
+    const fd = new FormData();
+    fd.append('title', document.getElementById('v-title').value.trim());
+    fd.append('description', document.getElementById('v-desc').value.trim());
+    fd.append('accessType', document.getElementById('v-access').value);
+    fd.append('price', document.getElementById('v-price').value || 0);
+    fd.append('video', videoFile);
+    fd.append('thumbnail', thumbFile);
+
+    try{
+      showMsg('upload-msg', 'Upload ho raha hai...', 'ok');
+      const res = await fetch(`${API_BASE}/videos`, {
+        method:'POST', headers: authHeaders(), body: fd
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Upload failed');
+      showMsg('upload-msg', 'Uploaded! Ab ye admin moderation ke liye pending hai.', 'ok');
+      document.getElementById('v-title').value='';
+      document.getElementById('v-desc').value='';
+      videoFile = null; thumbFile = null;
+      document.getElementById('video-drop-label').textContent = '📹 Video file yaha click karke chunein (mp4/mov/webm)';
+      document.getElementById('thumb-drop-label').textContent = '🖼️ Thumbnail photo chunein (jpg/png)';
+    }catch(e){ showMsg('upload-msg', e.message, 'err'); }
+  }
+
+  // ---- MY VIDEOS ----
+  async function loadMyVideos(){
+    const listEl = document.getElementById('video-list');
+    if(!myHandle){
+      listEl.innerHTML = '<p style="color:var(--text-soft);font-size:0.9rem;">Pehle Profile tab mein apna handle set karein.</p>';
+      return;
+    }
+    try{
+      const res = await fetch(`${API_BASE}/videos/creator/${myHandle}`);
+      const videos = await res.json();
+      if(!res.ok) throw new Error(videos.message || 'Could not load videos');
+      if(!videos.length){
+        listEl.innerHTML = '<p style="color:var(--text-soft);font-size:0.9rem;">Abhi tak koi video upload nahi hui.</p>';
+        return;
+      }
+      listEl.innerHTML = videos.map(v => `
+        <div class="video-list-item">
+          <div class="thumb"></div>
+          <div class="info">
+            <h4>${escapeHtml(v.title)}</h4>
+            <p>${v.accessType === 'pay_per_view' ? '₹' + v.price : v.accessType.replace('_',' ')}</p>
+          </div>
+          <span class="status-pill status-approved">Live</span>
+        </div>
+      `).join('');
+    }catch(e){
+      listEl.innerHTML = `<p style="color:var(--err);font-size:0.9rem;">${e.message}</p>`;
+    }
+  }
+
+  function showMsg(id, text, type){
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = `msg ${type}`;
+  }
+  function escapeHtml(str){
+    const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
+  }
+
+  // Auto-login if token already saved
+  if(token){ onAuthSuccess(token); }
+</script>
+</body>
+</html>

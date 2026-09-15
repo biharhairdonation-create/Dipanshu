@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Miss Bald Beauty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#FAF6F1; --plum:#241722; --plum-soft:#3A2536;
+    --burgundy:#7A2E3B; --gold:#C9A369; --line:#E4DAD0; --text-soft:#6E6259;
+    --ok:#3F7A56; --err:#B23A3A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--ivory);color:var(--plum);font-family:'Manrope',sans-serif;}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;}
+  input,button{font-family:'Manrope',sans-serif;font-size:0.95rem;}
+
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+  .login-box{background:#fff;border:1px solid var(--line);border-radius:6px;padding:44px;width:380px;}
+  .login-box h1{font-style:italic;font-size:1.7rem;margin-bottom:6px;}
+  .login-box p{color:var(--text-soft);font-size:0.9rem;margin-bottom:28px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:0.82rem;color:var(--text-soft);margin-bottom:6px;}
+  .field input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:4px;background:var(--ivory);}
+  .btn{padding:11px 20px;border-radius:4px;font-weight:600;border:1px solid var(--plum);cursor:pointer;transition:all .2s ease;font-size:0.88rem;}
+  .btn-dark{background:var(--plum);color:var(--ivory);}
+  .btn-dark:hover{background:var(--burgundy);border-color:var(--burgundy);}
+  .btn-outline{background:transparent;color:var(--plum);}
+  .btn-outline:hover{background:var(--plum);color:var(--ivory);}
+  .btn-full{width:100%;}
+  .msg{font-size:0.85rem;margin-top:12px;}
+  .msg.err{color:var(--err);} .msg.ok{color:var(--ok);}
+
+  #dashboard{display:none;}
+  header{display:flex;justify-content:space-between;align-items:center;padding:20px 6%;border-bottom:1px solid var(--line);background:#fff;}
+  .logo{font-family:'Fraunces',serif;font-style:italic;font-size:1.4rem;}
+  .logout{font-size:0.85rem;color:var(--text-soft);cursor:pointer;}
+  main{padding:40px 6%;max-width:1000px;margin:0 auto;}
+  .tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-bottom:32px;}
+  .tab{padding-bottom:14px;color:var(--text-soft);cursor:pointer;font-size:0.95rem;}
+  .tab.active{color:var(--plum);font-weight:700;border-bottom:2px solid var(--burgundy);}
+  .panel{display:none;} .panel.active{display:block;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:24px;margin-bottom:16px;}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:16px;}
+  .row .info h4{font-size:1rem;font-weight:600;}
+  .row .info p{font-size:0.85rem;color:var(--text-soft);margin-top:3px;}
+  .actions{display:flex;gap:10px;flex-shrink:0;}
+  .empty{color:var(--text-soft);font-size:0.9rem;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Admin Login</h1>
+    <p>Sirf admin account se login karein.</p>
+    <div class="field"><label>Email</label><input type="email" id="auth-email"></div>
+    <div class="field"><label>Password</label><input type="password" id="auth-password"></div>
+    <button class="btn btn-dark btn-full" onclick="login()">Login Karein</button>
+    <div class="msg" id="auth-msg"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <header>
+    <div class="logo">Miss Bald Beauty — Admin</div>
+    <div class="logout" onclick="logout()">Logout</div>
+  </header>
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-tab="creators" onclick="switchTab('creators')">Creator Approvals</div>
+      <div class="tab" data-tab="videos" onclick="switchTab('videos')">Video Moderation</div>
+    </div>
+
+    <div class="panel active" id="panel-creators">
+      <div id="creator-list"><p class="empty">Loading...</p></div>
+    </div>
+
+    <div class="panel" id="panel-videos">
+      <div id="video-list"><p class="empty">Loading...</p></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:5000/api'; // change to your deployed backend URL
+  let token = localStorage.getItem('mbb_admin_token') || null;
+
+  async function login(){
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    try{
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({email, password})
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.message || 'Login failed');
+      if(data.user.role !== 'admin') throw new Error('Ye account admin nahi hai.');
+      onAuthSuccess(data.token);
+    }catch(e){ showMsg('auth-msg', e.message, 'err'); }
+  }
+
+  function onAuthSuccess(t){
+    token = t;
+    localStorage.setItem('mbb_admin_token', token);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadCreatorApprovals();
+  }
+
+  function logout(){
+    localStorage.removeItem('mbb_admin_token');
+    token = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+  }
+
+  function authHeaders(extra = {}){ return { 'Authorization': `Bearer ${token}`, ...extra }; }
+
+  function switchTab(name){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${name}`).classList.add('active');
+    if(name === 'creators') loadCreatorApprovals();
+    if(name === 'videos') loadVideoModeration();
+  }
+
+  // NOTE: the backend doesn't yet expose a "pending creators" list endpoint —
+  // this calls a suggested route. Add GET /api/admin/pending-creators on the
+  // backend (mirrors pending-videos) returning CreatorProfile.find({isApproved:false}).
+  async function loadCreatorApprovals(){
+    const el = document.getElementById('creator-list');
+    try{
+      const res = await fetch(`${API_BASE}/admin/pending-creators`, { headers: authHeaders() });
+      const creators = await res.json();
+      if(!res.ok) throw new Error(creators.message || 'Could not load creators');
+      if(!creators.length){ el.innerHTML = '<p class="empty">Koi pending creator nahi hai.</p>'; return; }
+      el.innerHTML = creators.map(c => `
+        <div class="card row">
+          <div class="info">
+            <h4>${escapeHtml(c.displayName)} <span style="color:var(--text-soft);font-weight:400;">@${escapeHtml(c.handle)}</span></h4>
+            <p>${escapeHtml(c.bio || 'No bio')}</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-dark" onclick="approveCreator('${c._id}')">Approve</button>
+          </div>
+        </div>
+      `).join('');
+    }catch(e){ el.innerHTML = `<p class="empty" style="color:var(--err);">${e.message}</p>`; }
+  }
+
+  async function approveCreator(id){
+    try{
+      const res = await fetch(`${API_BASE}/admin/approve-creator/${id}`, { method:'POST', headers: authHeaders() });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.message);
+      loadCreatorApprovals();
+    }catch(e){ alert(e.message); }
+  }
+
+  async function loadVideoModeration(){
+    const el = document.getElementById('video-list');
+    try{
+      const res = await fetch(`${API_BASE}/admin/pending-videos`, { headers: authHeaders() });
+      const videos = await res.json();
+      if(!res.ok) throw new Error(videos.message || 'Could not load videos');
+      if(!videos.length){ el.innerHTML = '<p class="empty">Koi pending video nahi hai.</p>'; return; }
+      el.innerHTML = videos.map(v => `
+        <div class="card row">
+          <div class="info">
+            <h4>${escapeHtml(v.title)}</h4>
+            <p>by ${escapeHtml(v.creator?.displayName || 'Unknown')} (@${escapeHtml(v.creator?.handle || '')})</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-outline" onclick="moderateVideo('${v._id}','rejected')">Reject</button>
+            <button class="btn btn-dark" onclick="moderateVideo('${v._id}','approved')">Approve</button>
+          </div>
+        </div>
+      `).join('');
+    }catch(e){ el.innerHTML = `<p class="empty" style="color:var(--err);">${e.message}</p>`; }
+  }
+
+  async function moderateVideo(id, decision){
+    try{
+      const res = await fetch(`${API_BASE}/admin/moderate-video/${id}`, {
+        method:'POST', headers: authHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify({decision})
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.message);
+      loadVideoModeration();
+    }catch(e){ alert(e.message); }
+  }
+
+  function showMsg(id, text, type){ const el = document.getElementById(id); el.textContent = text; el.className = `msg ${type}`; }
+  function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+  if(token){ onAuthSuccess(token); }
+</script>
+</body>
+</html>
