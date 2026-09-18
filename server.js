@@ -15,7 +15,7 @@ const app = express();
 
 connectDB();
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
