@@ -1,15 +1,13 @@
-const multer = require('multer');
-const AWS = require('aws-sdk');
-const path = require('path');
-const crypto = require('crypto');
 
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Store in memory, then push to S3 manually (gives more control over private ACL + signed URLs)
 const storage = multer.memoryStorage();
 
 const allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
@@ -28,31 +26,25 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 500 * 1024 * 1024 } // 500MB per file
+  limits: { fileSize: 100 * 1024 * 1024 }
 });
 
-// Uploads a buffer to a private S3 bucket, returns the object key (not a public URL)
-async function uploadToS3(buffer, mimetype, folder) {
-  const key = `${folder}/${crypto.randomUUID()}${path.extname(mimetype.split('/')[1] ? '.' + mimetype.split('/')[1] : '')}`;
-  await s3
-    .putObject({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-      Body: buffer,
-      ContentType: mimetype,
-      ACL: 'private' // videos are never public — always served via signed URL
-    })
-    .promise();
-  return key;
+function uploadToS3(buffer, mimetype, folder) {
+  return new Promise((resolve, reject) => {
+    const resourceType = mimetype.startsWith('video') ? 'video' : 'image';
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: resourceType },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    stream.end(buffer);
+  });
 }
 
-// Generates a temporary signed URL so only paying/subscribed users can stream a video
-function getSignedUrl(key, expiresInSeconds = 3600) {
-  return s3.getSignedUrl('getObject', {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
-    Expires: expiresInSeconds
-  });
+function getSignedUrl(url) {
+  return url;
 }
 
 module.exports = { upload, uploadToS3, getSignedUrl };
