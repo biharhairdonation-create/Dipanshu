@@ -41,16 +41,21 @@ router.post(
   '/login',
   [body('email').isEmail().normalizeEmail(), body('password').notEmpty()],
   async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
+    try {
+      const { email, password } = req.body;
+      const user = await User.findOne({ email });
+      if (!user || !(await user.comparePassword(password))) {
+        return res.status(401).json({ message: 'Invalid email or password.' });
+      }
+      const token = signToken(user._id);
+      res.json({
+        token,
+        user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      });
+    } catch (err) {
+      console.error('LOGIN ERROR:', err);
+      res.status(500).json({ message: 'Server error during login: ' + err.message });
     }
-    const token = signToken(user._id);
-    res.json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
-    });
   }
 );
 
