@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const Video = require('../models/Video');
 const CreatorProfile = require('../models/CreatorProfile');
 const Subscription = require('../models/Subscription');
