@@ -45,7 +45,56 @@ router.post(
 );
 
 // GET /api/videos/creator/:handle  (list a creator's videos — locked/unlocked shown, no direct URLs leaked)
-router.get('/creator/:handle', async (req, res) => {
+router.get('/:id/stream', async (req, res) => {
+  const video = await Video.findById(req.params.id);
+  if (!video || video.moderationStatus !== 'approved') {
+    return res.status(404).json({ message: 'Video not found.' });
+  }
+
+  // Free videos: no login required at all
+  if (video.accessType === 'free') {
+    return res.json({ url: getSignedUrl(video.videoUrl) });
+  }
+
+  // Subscription/pay-per-view videos: require login
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Login required to watch this video.' });
+  }
+  let userId;
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    userId = decoded.id;
+  } catch (e) {
+    return res.status(401).json({ message: 'Invalid session, please login again.' });
+  }
+
+  if (video.accessType === 'subscription_only') {
+    const sub = await Subscription.findOne({
+      fan: userId,
+      creator: video.creator,
+      status: 'active',
+      currentPeriodEnd: { $gt: new Date() }
+    });
+    if (!sub) return res.status(403).json({ message: 'An active subscription is required to watch this video.' });
+    return res.json({ url: getSignedUrl(video.videoUrl) });
+  }
+
+  if (video.accessType === 'pay_per_view') {
+    const purchased = await Transaction.findOne({
+      fan: userId,
+      relatedVideo: video._id,
+      status: 'paid'
+    });
+    if (!purchased) return res.status(403).json({ message: 'Purchase this video to watch it.' });
+    video.views += 1;
+    await video.save();
+    return res.json({ url: getSignedUrl(video.videoUrl) });
+  }
+
+  res.status(403).json({ message: 'Access denied.' });
+});
   const profile = await CreatorProfile.findOne({ handle: req.params.handle, isApproved: true });
   if (!profile) return res.status(404).json({ message: 'Creator not found.' });
 
